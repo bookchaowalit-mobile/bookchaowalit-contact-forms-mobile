@@ -2,10 +2,14 @@ import 'package:contact_forms/main.dart';
 import 'package:contact_forms/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   testWidgets('app shell shows the form and about tab', (tester) async {
     await tester.pumpWidget(const ContactFormsApp());
+    await tester.pumpAndSettle();
     expect(find.text('Contact Forms'), findsWidgets);
     await tester.tap(find.text('About'));
     await tester.pumpAndSettle();
@@ -16,6 +20,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('submit')));
     await tester.pump();
     expect(find.text('Name is required'), findsOneWidget);

@@ -24,14 +24,14 @@ class AboutScreen extends StatelessWidget {
           const _Bullet(
               'Email format and length rules live in a pure-Dart validator'),
           const _Bullet(
-              'Submitted messages are listed newest first (session only)'),
+              'Submitted messages are saved on this device, newest first'),
           const SizedBox(height: 16),
           Text('Privacy', style: textTheme.titleMedium),
           const SizedBox(height: 8),
           const Text(
             'Everything runs on this device. The app has no account, '
-            'analytics or network calls, and data is kept only for the '
-            'current session.',
+            'analytics or network calls. Your data is saved locally on this '
+            'device and removed when you uninstall the app.',
           ),
           const SizedBox(height: 16),
           Text('Made by Chaowalit Greepoke · bookchaowalit.com',

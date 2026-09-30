@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../data/contact_message_repository.dart';
+import '../data/list_repository.dart';
 import '../logic/contact_validator.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.clock = DateTime.now});
+  const HomeScreen({super.key, this.clock = DateTime.now, this.repository});
+
+  /// Where messages are stored. Defaults to an in-memory store (tests); the
+  /// app passes [deviceContactMessageRepository].
+  final ContactMessageRepository? repository;
 
   final DateTime Function() clock;
 
@@ -18,6 +24,48 @@ class _HomeScreenState extends State<HomeScreen> {
   final _subject = TextEditingController();
   final _message = TextEditingController();
   final List<ContactMessage> _sent = [];
+
+  late final ContactMessageRepository _repository =
+      widget.repository ?? InMemoryListRepository<ContactMessage>();
+  bool _loading = true;
+  String? _storageError;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final saved = await _repository.load();
+      if (!mounted) return;
+      setState(() {
+        _sent
+          ..clear()
+          ..addAll(saved);
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _storageError = 'Saved messages could not be read.';
+      });
+    }
+  }
+
+  Future<void> _persist() async {
+    try {
+      await _repository.save(List.of(_sent));
+      if (mounted && _storageError != null) {
+        setState(() => _storageError = null);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _storageError = 'Could not save messages on this device.');
+    }
+  }
 
   @override
   void dispose() {
@@ -45,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
         c.clear();
       }
     });
+    _persist();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Message saved on this device')),
     );
@@ -58,6 +107,16 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (_loading) const LinearProgressIndicator(),
+          if (_storageError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                _storageError!,
+                key: const Key('storage-error'),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
           Form(
             key: _formKey,
             autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -135,6 +194,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 title: Text(m.subject),
                 subtitle: Text('${m.name} <${m.email}>\n${m.message}'),
                 isThreeLine: true,
+                trailing: IconButton(
+                  tooltip: 'Delete message',
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () {
+                    setState(() => _sent.remove(m));
+                    _persist();
+                  },
+                ),
               ),
             ),
         ],

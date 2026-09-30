@@ -67,7 +67,25 @@ class ContactMessage {
   final String subject;
   final String message;
   final DateTime sentAt;
+
+  Map<String, Object?> toJson() => {
+        'name': name,
+        'email': email,
+        'subject': subject,
+        'message': message,
+        'sentAt': sentAt.toIso8601String(),
+      };
+
+  static ContactMessage fromJson(Map<String, Object?> json) => ContactMessage(
+        name: json['name'] as String,
+        email: json['email'] as String,
+        subject: json['subject'] as String,
+        message: json['message'] as String,
+        sentAt: DateTime.parse(json['sentAt'] as String),
+      );
 }
+
+Map<String, Object?> contactMessageToJson(ContactMessage m) => m.toJson();
 
 /// Returns a map of field -> error for every invalid field (empty when valid).
 Map<String, String> validateAll({
