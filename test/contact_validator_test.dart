@@ -57,4 +57,63 @@ void main() {
     expect(m.subject, '(no subject)');
     expect(m.message, 'hi there friend');
   });
+
+  group('edge cases (pass 3)', () {
+    test('lengths count what the user sees, not UTF-16 code units', () {
+      // 80 emoji = 160 code units; the TextField counter shows 80/80.
+      expect(validateName('😀' * 80), isNull);
+      expect(validateName('😀' * 81), isNotNull);
+      // Thai with tone marks: each syllable is one grapheme cluster.
+      expect('น้ำ'.length, 3);
+      expect(visibleLength('น้ำ'), 1);
+      expect(validateMessage('👍🏽' * 10), isNull);
+      expect(validateMessage('👍🏽' * 9), contains('at least'));
+      expect(validateSubject('é' * ContactLimits.subjectMax), isNull);
+    });
+
+    test('surrounding whitespace does not count toward limits', () {
+      expect(validateName('  ${'a' * ContactLimits.nameMax}  '), isNull);
+      expect(validateMessage('   short    '), contains('at least'));
+      expect(validateName(' \t\n '), 'Name is required');
+      expect(validateName(null), 'Name is required');
+    });
+
+    test('email local part rules', () {
+      for (final bad in [
+        '.ada@example.com',
+        'ada.@example.com',
+        '${'a' * 65}@example.com',
+        'ada@example',
+        'ada@-example.com',
+        'ada@example..com',
+        'ada example@example.com',
+        '@example.com',
+        'ada@',
+      ]) {
+        expect(validateEmail(bad), isNotNull, reason: bad);
+      }
+      for (final ok in [
+        '${'a' * 64}@example.com',
+        'first.last+tag@sub.example.co.th',
+        '  ADA@Example.com ',
+      ]) {
+        expect(validateEmail(ok), isNull, reason: ok);
+      }
+    });
+
+    test('JSON round trip keeps unicode and timestamps', () {
+      final m = ContactMessage(
+        name: 'สมชาย 😀',
+        email: 'A@B.CO',
+        subject: '   ',
+        message: 'สวัสดีครับ ขอใบเสนอราคา',
+        sentAt: DateTime(2026, 2, 29 - 1, 23, 59, 59),
+      );
+      final back = ContactMessage.fromJson(m.toJson());
+      expect(back.name, 'สมชาย 😀');
+      expect(back.email, 'a@b.co');
+      expect(back.subject, '(no subject)');
+      expect(back.sentAt, m.sentAt);
+    });
+  });
 }

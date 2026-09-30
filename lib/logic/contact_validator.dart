@@ -1,6 +1,13 @@
 /// Pure validation rules for a contact message.
 library;
 
+import 'package:characters/characters.dart';
+
+/// Length as the user sees it (grapheme clusters), matching the counter that
+/// `TextField.maxLength` shows. `String.length` counts UTF-16 code units, so
+/// an emoji or a Thai syllable with tone marks would count double.
+int visibleLength(String text) => text.characters.length;
+
 class ContactLimits {
   static const nameMax = 80;
   static const subjectMax = 120;
@@ -15,7 +22,7 @@ final _emailPattern = RegExp(
 String? validateName(String? value) {
   final v = (value ?? '').trim();
   if (v.isEmpty) return 'Name is required';
-  if (v.length > ContactLimits.nameMax) {
+  if (visibleLength(v) > ContactLimits.nameMax) {
     return 'Name must be at most ${ContactLimits.nameMax} characters';
   }
   return null;
@@ -27,12 +34,18 @@ String? validateEmail(String? value) {
   if (v.length > 254 || !_emailPattern.hasMatch(v) || v.contains('..')) {
     return 'Enter a valid email address';
   }
+  // RFC 5321/5322: the local part is at most 64 octets and may not start or
+  // end with a dot.
+  final local = v.substring(0, v.lastIndexOf('@'));
+  if (local.length > 64 || local.startsWith('.') || local.endsWith('.')) {
+    return 'Enter a valid email address';
+  }
   return null;
 }
 
 String? validateSubject(String? value) {
   final v = (value ?? '').trim();
-  if (v.length > ContactLimits.subjectMax) {
+  if (visibleLength(v) > ContactLimits.subjectMax) {
     return 'Subject must be at most ${ContactLimits.subjectMax} characters';
   }
   return null;
@@ -41,10 +54,10 @@ String? validateSubject(String? value) {
 String? validateMessage(String? value) {
   final v = (value ?? '').trim();
   if (v.isEmpty) return 'Message is required';
-  if (v.length < ContactLimits.messageMin) {
+  if (visibleLength(v) < ContactLimits.messageMin) {
     return 'Message must be at least ${ContactLimits.messageMin} characters';
   }
-  if (v.length > ContactLimits.messageMax) {
+  if (visibleLength(v) > ContactLimits.messageMax) {
     return 'Message must be at most ${ContactLimits.messageMax} characters';
   }
   return null;
