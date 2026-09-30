@@ -25,6 +25,7 @@ Score: 7.5/10 — validated, persisted contact form with unicode-correct limits,
 - Bug fix: emails with a leading/trailing dot in the local part (`.ada@x.com`, `ada.@x.com`) or a local part over 64 characters were accepted.
 - Edge-case unit tests: emoji/skin-tone/Thai lengths, whitespace-only input, `null`, email local-part rules, JSON round trip with Thai/emoji text.
 - Widget tests: 80-emoji name submits, delete empties the list, a11y guidelines (tap target, labels, contrast), 200% text scale.
+- The 200% text-scale widget test now runs at a 360 px phone width (it previously used the 800 px default test surface); no overflow found.
 
 ## Done in pass 2
 
